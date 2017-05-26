@@ -1,11 +1,5 @@
 #**Behavioral Cloning** 
 
-
-
-https://youtu.be/6H3FGSvtQ8k
-https://youtu.be/ZDEl4v90jpQ
-
-
 [//]: # (Image References)
 
 [image1]: ./examples/CNNView.jpg "What My Model Sees"
@@ -21,10 +15,13 @@ On top of that, i also applyied the same technique and trained a wi-fi remote to
 The videos for both performances can be found here : 
 
 Udacity Track1 (simulator view + CNN view)
+
 https://youtu.be/6H3FGSvtQ8k
+
 https://youtu.be/ZDEl4v90jpQ
 
 ToyCar RaspberryPi BehavioralCloning Obstacle/Wall detection : 
+
 https://youtu.be/nN1Qf_X0rr4
 
 Visualisation of CNN input after pre-processing : 
