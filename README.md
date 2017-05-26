@@ -1,118 +1,92 @@
-# Behaviorial Cloning Project
+#**Behavioral Cloning** 
 
-[![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
-Overview
+
+https://youtu.be/6H3FGSvtQ8k
+https://youtu.be/ZDEl4v90jpQ
+
+
+[//]: # (Image References)
+
+[image1]: ./examples/CNNView.jpg "What My Model Sees"
+[image2]: ./examples/ToyCar.jpg "BehavioralCloning on WiFi RC Car"
+
 ---
-This repository contains starting files for the Behavioral Cloning Project.
 
-In this project, you will use what you've learned about deep neural networks and convolutional neural networks to clone driving behavior. You will train, validate and test a model using Keras. The model will output a steering angle to an autonomous vehicle.
+###Model Architecture and Training Strategy
 
-We have provided a simulator where you can steer a car around a track for data collection. You'll use image data and steering angles to train a neural network and then use this model to drive the car autonomously around the track.
+This is a writeup for the Udacity "Self-Driving" - Behvaioral Cloning project.
+On top of that, i also applyied the same technique and trained a wi-fi remote toy-car, using a raspberryPi to get webcam image values and input joyStick controls.
 
-We also want you to create a detailed writeup of the project. Check out the [writeup template](https://github.com/udacity/CarND-Behavioral-Cloning-P3/blob/master/writeup_template.md) for this project and use it as a starting point for creating your own writeup. The writeup can be either a markdown file or a pdf document.
+The videos for both performances can be found here : 
 
-To meet specifications, the project will require submitting five files: 
-* model.py (script used to create and train the model)
-* drive.py (script to drive the car - feel free to modify this file)
-* model.h5 (a trained Keras model)
-* a report writeup file (either markdown or pdf)
-* video.mp4 (a video recording of your vehicle driving autonomously around the track for at least one full lap)
+Udacity Track1 (simulator view + CNN view)
+https://youtu.be/6H3FGSvtQ8k
+https://youtu.be/ZDEl4v90jpQ
 
-This README file describes how to output the video in the "Details About Files In This Directory" section.
+ToyCar RaspberryPi BehavioralCloning Obstacle/Wall detection : 
+https://youtu.be/nN1Qf_X0rr4
 
-Creating a Great Writeup
----
-A great writeup should include the [rubric points](https://review.udacity.com/#!/rubrics/432/view) as well as your description of how you addressed each point.  You should include a detailed description of the code used (with line-number references and code snippets where necessary), and links to other supporting documents or external references.  You should include images in your writeup to demonstrate how your code works with examples.  
+Visualisation of CNN input after pre-processing : 
+![alt text][image1]
 
-All that said, please be concise!  We're not looking for you to write a book here, just a brief description of how you passed each rubric point, and references to the relevant code :). 
+ToyCar Environment : 
+![alt text][image2]
 
-You're not required to use markdown for your writeup.  If you use another method please just submit a pdf of your writeup.
+####1. NVidia Model
 
-The Project
----
-The goals / steps of this project are the following:
-* Use the simulator to collect data of good driving behavior 
-* Design, train and validate a model that predicts a steering angle from image data
-* Use the model to drive the vehicle autonomously around the first track in the simulator. The vehicle should remain on the road for an entire loop around the track.
-* Summarize the results with a written report
+After building the basic running pipeline for this project, I deployed the NVidia model (https://devblogs.nvidia.com/parallelforall/deep-learning-self-driving-cars/) and started tweaking parameters for experimentation. The car was driving pretty well just after my first two recording runs.
 
-### Dependencies
-This lab requires:
+Keras Lambda layer is used for normalisation of input images.
+Dropout(0.5 learning_rate) after the first pyramidal convolutions is used to reduce overfitting.
+Elu layer replaced Relu for activation functions (suggested better performance and faster gradient descent)
 
-* [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit)
+I do not keep training data in memory, instead use a custom batch_generator for both validation and training, with random,on the fly,augmentation. Testing was done directly on the simulator with the best val_loss model. 
 
-The lab enviroment can be created with CarND Term1 Starter Kit. Click [here](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) for the details.
+Adam optimizer is used along with a starting lr or 1e-3, observed to reach the same performance as smaller values, but with faster gradient descent.
 
-The following resources can be found in this github repository:
-* drive.py
-* video.py
-* writeup_template.md
 
-The simulator can be downloaded from the classroom. In the classroom, we have also provided sample data that you can optionally use to help train your model.
+###Model Architecture and Training Strategy
 
-## Details About Files In This Directory
+####2. Data-gathering
 
-### `drive.py`
+For my first try i just drove the car around the first track, without keeping it perfectly alligned to the road-center. The basic model and this data performed pretty poorly (kept within a straight line but did not handle corners)
 
-Usage of `drive.py` requires you have saved the trained model as an h5 file, i.e. `model.h5`. See the [Keras documentation](https://keras.io/getting-started/faq/#how-can-i-save-a-keras-model) for how to create this file using the following command:
-```sh
-model.save(filepath)
-```
+I then gathered more "sanitised" data (dead center on the road) and some recovery cases (sideway swirl within 1 lap of record). I also drove a couple of laps on the jungle track and reversed the track-direction for both tracks, 1 lap. With the NVidia Model attached this already performed well in autonomous mode (finishing 1st track but failing 2nd track)
 
-Once the model has been saved, it can be used with drive.py using this command:
+####3. Model and variation
+ 
+Final Keras model structure : 
 
-```sh
-python drive.py model.h5
-```
+model = Sequential([
+    Lambda(lambda x: x/255.0-0.5, input_shape=SHAPE),
+    Conv2D(32,5,5, border_mode='same',activation='elu', subsample=(2, 2)),
+    Conv2D(48,5,5, border_mode='same',activation='elu', subsample=(2, 2)),
+    Conv2D(64,5,5, border_mode='same',activation='elu', subsample=(2, 2)),
+    Conv2D(64, 5, 5, activation='elu'),
+    Dropout(0.5),
+    Flatten(),
+    Dense(256, activation='elu'),
+    Dense(128, activation='elu'),
+    Dense(64,activation='elu'),
+    Dense(1, name='regressSteer'),
+    ])
 
-The above command will load the trained model and use the model to make predictions on individual images in real-time and send the predicted angle back to the server via a websocket connection.
+I experimented with different dimensions for the FC Dense layers and also with adding More convolution, but the pre-defined NVidia model seemed pretty optimal for this situation. 
 
-Note: There is known local system's setting issue with replacing "," with "." when using drive.py. When this happens it can make predicted steering values clipped to max/min values. If this occurs, a known fix for this is to add "export LANG=en_US.utf8" to the bashrc file.
+I tryied regressing both steer and throttle values (with Dense(2) - single 'mse' loss') with interesting results if post-thresholding applyed (basically turning the regresion into a forward-backward classification). The regression throttle results were keeping the car into more of a standstill (probably because it registered 0 whenever i tried to drive slowly for proper steer examples), never reaching max value.
 
-#### Saving a video of the autonomous agent
+I did not keep this implementation because my data-gathering strategy did not take it into consideration and i consider i could have done better from this perspective. However, for the Toy-RC car the following observed behavior was very interesting : 
+* running into perpendicular obstacles/walls when training data was flipped (-1 hard left 1 hard right values) resulted into a min loss value of around 0, making the car susceptiple to full perpendicular contact. (if it attacked a wall/obstacle at an angle, the prediction was spot on)
+* i regressed throttle values with a strategy of (1 full throttle for general case and -1 backward throttle for corner cases like perpendicular wall in proximity)
+* this resulted in a toy car that actually rectified hitting a perpendicular wall by breaking and even going backwards when in close proximity -VERY Exciting stuff
 
-```sh
-python drive.py model.h5 run1
-```
 
-The fourth argument `run1` is the directory to save the images seen by the agent to. If the directory already exists it'll be overwritten.
+####4. Creation of the Training Set & Training Process
 
-```sh
-ls run1
+For the RC car i experimented further with the training set by different data-gathering approach : 
+* I would let a "naive" model drive the to-car around and when i corrected (gave joyStick input of steer or throttle) i would gather those frame/label tuples into a new dataRetrigger collection db. This way i had finer control on the cases where it performed poorly
 
-[2017-01-09 16:10:23 EST]  12KiB 2017_01_09_21_10_23_424.jpg
-[2017-01-09 16:10:23 EST]  12KiB 2017_01_09_21_10_23_451.jpg
-[2017-01-09 16:10:23 EST]  12KiB 2017_01_09_21_10_23_477.jpg
-[2017-01-09 16:10:23 EST]  12KiB 2017_01_09_21_10_23_528.jpg
-[2017-01-09 16:10:23 EST]  12KiB 2017_01_09_21_10_23_573.jpg
-[2017-01-09 16:10:23 EST]  12KiB 2017_01_09_21_10_23_618.jpg
-[2017-01-09 16:10:23 EST]  12KiB 2017_01_09_21_10_23_697.jpg
-[2017-01-09 16:10:23 EST]  12KiB 2017_01_09_21_10_23_723.jpg
-[2017-01-09 16:10:23 EST]  12KiB 2017_01_09_21_10_23_749.jpg
-[2017-01-09 16:10:23 EST]  12KiB 2017_01_09_21_10_23_817.jpg
-...
-```
+The data was randomly split and augmented (flipping with steering iversion | center,left,right camera usage with +-2 steering residuals | cropping, reshaping, brightness augmentation)
 
-The image file name is a timestamp when the image image was seen. This information is used by `video.py` to create a chronological video of the agent driving.
-
-### `video.py`
-
-```sh
-python video.py run1
-```
-
-Create a video based on images found in the `run1` directory. The name of the video will be name of the directory following by `'.mp4'`, so, in this case the video will be `run1.mp4`.
-
-Optionally one can specify the FPS (frames per second) of the video:
-
-```sh
-python video.py run1 --fps 48
-```
-
-The video will run at 48 FPS. The default FPS is 60.
-
-#### Why create a video
-
-1. It's been noted the simulator might perform differently based on the hardware. So if your model drives succesfully on your machine it might not on another machine (your reviewer). Saving a video is a solid backup in case this happens.
-2. You could slightly alter the code in `drive.py` and/or `video.py` to create a video of what your model sees after the image is processed (may be helpful for debugging).
+Some blog posts from Udacity presenting cool projects (https://medium.com/udacity/how-udacitys-self-driving-car-students-approach-behavioral-cloning-5ffbfd2979e5) inspired my to use shadow and jitter augmentation, as well as data-smoothing, but i was too late with the delivery to go on any further.
