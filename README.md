@@ -24,10 +24,12 @@ ToyCar RaspberryPi BehavioralCloning Obstacle/Wall detection :
 
 https://youtu.be/nN1Qf_X0rr4
 
-Visualisation of CNN input after pre-processing : 
+Visualisation of CNN input after pre-processing :
+
 ![alt text][image1]
 
 ToyCar Environment : 
+
 ![alt text][image2]
 
 ####1. NVidia Model
